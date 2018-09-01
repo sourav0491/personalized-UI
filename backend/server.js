@@ -2,12 +2,17 @@ const express = require('express');
 const chalk = require('chalk');
 const mongoose = require('mongoose');
 const bodyParser=require('body-parser');
+const cors = require('cors')
+const passport=require('passport');
+const session=require('express-session')
+var GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 /**
  * Controllers (route handlers).
  */
 const homeController = require('./controllers/home');
 const userController = require('./controllers/user');
+
 
 /**
  * util 
@@ -19,6 +24,10 @@ const userController = require('./controllers/user');
  * Create Express server.
  */
 const app = express();
+/**
+ * cors middleware
+ */
+app.use(cors())
 
 
 
@@ -38,11 +47,46 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 /**
+ *passport middleware 
+ */
+app.use(session({secret:process.env.secret,resave: true,saveUninitialized: true}))
+app.use(passport.initialize())
+app.use(passport.session())
+
+passport.serializeUser(function(user,done){
+  done(null,user)
+})
+
+passport.deserializeUser(function(user,done){
+  done(null,user)
+})
+
+passport.use(new GoogleStrategy({
+    clientID: '143277648213-v1hf7heni540man3puml4eab5p9uc7n3.apps.googleusercontent.com',
+    clientSecret:'RI_OA2NxsvL8sZkvkM2otdhT',
+    callbackURL: 'http://localhost:3000/auth/google/callback'
+  },
+  function(req , accessToken , refreshToken , profile, done) {
+     return done(null,profile);
+  }
+));
+
+/**
  * Primary app routes.
  */
 app.get('/', homeController.index);
 app.post('/register', userController.register);
 app.post('/login', userController.login);
+
+/**
+ * google authorization route
+ */
+app.get('/auth/google',passport.authenticate('google', { scope: ['profile'] }));
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/');
+  });
 
 /**
  * authorized route
