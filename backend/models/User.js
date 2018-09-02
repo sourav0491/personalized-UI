@@ -2,8 +2,17 @@ const mongoose = require('mongoose');
 mongoose.set('useCreateIndex', true);
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, unique: true , required:true},
-  pwd: { type: String, required:true}, 
+  email: { type: String, unique: true},
+  pwd: { type: String},
+  social: {
+    google: {
+      id: String,
+      token: String,
+      name: String,
+      email: String,
+      photo: String
+    }
+  }
 });
 
 const User = mongoose.model('User', userSchema);

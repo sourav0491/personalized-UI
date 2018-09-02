@@ -1,11 +1,12 @@
 const express = require('express');
 const chalk = require('chalk');
 const mongoose = require('mongoose');
-const bodyParser=require('body-parser');
+const bodyParser = require('body-parser');
 const cors = require('cors')
-const passport=require('passport');
-const session=require('express-session')
+const passport = require('passport');
+const session = require('express-session')
 var GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('./models/User');
 
 /**
  * Controllers (route handlers).
@@ -18,7 +19,7 @@ const userController = require('./controllers/user');
  * util 
  */
 
- const verifyToken = require('./util/verifyToken.js');
+const verifyToken = require('./util/verifyToken.js');
 
 /**
  * Create Express server.
@@ -49,25 +50,51 @@ app.use(bodyParser.urlencoded({ extended: true }));
 /**
  *passport middleware 
  */
-app.use(session({secret:process.env.secret,resave: true,saveUninitialized: true}))
+app.use(session({ secret: process.env.secret, resave: true, saveUninitialized: true }))
 app.use(passport.initialize())
 app.use(passport.session())
 
-passport.serializeUser(function(user,done){
-  done(null,user)
+passport.serializeUser(function (user, done) {
+  done(null, user)
 })
 
-passport.deserializeUser(function(user,done){
-  done(null,user)
+passport.deserializeUser(function (user, done) {
+  done(null, user)
 })
 
 passport.use(new GoogleStrategy({
-    clientID: '143277648213-v1hf7heni540man3puml4eab5p9uc7n3.apps.googleusercontent.com',
-    clientSecret:'RI_OA2NxsvL8sZkvkM2otdhT',
-    callbackURL: 'http://localhost:3000/auth/google/callback'
-  },
-  function(req , accessToken , refreshToken , profile, done) {
-     return done(null,profile);
+  clientID: '143277648213-v1hf7heni540man3puml4eab5p9uc7n3.apps.googleusercontent.com',
+  clientSecret: 'RI_OA2NxsvL8sZkvkM2otdhT',
+  callbackURL: 'http://localhost:3000/auth/google/callback'
+},
+  function (req, accessToken, refreshToken, profile, done) {
+    //return done(null,profile);
+    User.findOne({ 'social.google.id': profile.id }, function (err, user) {
+      if (err)
+        return done(err);
+
+      if (user) {
+
+        // if a user is found, log them in
+        return done(null, user);
+      } else {
+        // if the user isnt in our database, create a new user
+        var newUser = new User();
+
+        // set all of the relevant information
+        newUser.social.google.id = profile.id;
+        newUser.social.google.token = accessToken;
+        newUser.social.google.name = profile.displayName;
+        newUser.social.google.email = profile.emails[0].value; // pull the first email
+
+        // save the user
+        newUser.save(function (err) {
+          if (err)
+            throw err;
+          return done(null, newUser);
+        });
+      }
+    });
   }
 ));
 
@@ -81,9 +108,9 @@ app.post('/login', userController.login);
 /**
  * google authorization route
  */
-app.get('/auth/google',passport.authenticate('google', { scope: ['profile'] }));
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile','email'] }));
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }),
-  function(req, res) {
+  function (req, res) {
     // Successful authentication, redirect home.
     res.redirect('/');
   });
@@ -91,7 +118,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
 /**
  * authorized route
  */
-app.post('/userDetails', verifyToken, userController.userDetails);
+app.get('/userDetails', verifyToken, userController.userDetails);
 
 
 
