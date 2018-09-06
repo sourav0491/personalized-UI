@@ -1,4 +1,35 @@
+.contentAligned{
+    justify-content: flex-end;
+    display: flex;
+    -webkit-box-pack: flex-end;
+}
+
+.loginHeader{
+    font-size: 38px;
+    font-weight: 800;
+    font-family: cursive;
+}
+
+.label{
+    font-size: 26px;
+    font-weight: 600;
+    font-family: cursive;
+}
+
 .submit {
-    background-color:#99cc00;
+    background-color:#08e8e8;
     padding:10px;
+}
+
+.theme {
+    background-image: url('./../images/navigate.png');
+    background-color: darkslategrey;
+    background-repeat: space;
+    background-attachment: fixed;
+    background-size: 350px 230px;
+    background-position: center;
+}
+
+.labelsColor {
+    color: #08e8e8;
 }
